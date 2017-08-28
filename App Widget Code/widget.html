@@ -1,0 +1,163 @@
+<!---
+Thsi contains HTML, CSS and Javascript code that produces front-end functionality 
+for the widget
+-->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <style>
+        div {
+            padding: 5px;
+        }
+        
+        .button {
+            padding: 7px;
+            background-color: #2962FF;
+            color: #ECEFF1;
+            font-family: Verdana, Geneva, sans-serif;
+            font-weight: bold;
+            font-size: 12px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        
+        .selections {
+            font-family: Tahoma, Geneva, sans-serif;
+        }
+        
+        input[type=text] {
+            border: 2px solid gray;
+            border-radius: 4px;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <button class="button" style="width: 90%; margin-left: 5%" onclick="handleFormSubmit()">Generate Folders and Files</button>
+    </div>
+    <hr>
+    <div class="selections">
+        <span>Select Category:</span>
+        <br>
+        <form action="">
+            <input type="radio" name="seltype" value="All" onclick="setActive()" checked>All
+            <br>
+            <input type="radio" name="seltype" value="Files" onclick="setActive()">Files
+            <br>
+            <input type="radio" name="seltype" value="Folders" onclick="setActive()">Folders
+            <br>
+        </form>
+    </div>
+    <div class="selections">
+        <span>Select Folder: </span>
+        <br>
+        <input type="text" list="folders" id="folderitems" onchange="populateSpecific()">
+        <datalist id="folders"></datalist>
+        <br>
+        <br>
+        <span>Select File: </span>
+        <br>
+        <input type="text" list="files" id="fileitems">
+        <datalist id="files"></datalist>
+        <br>
+        <br>
+        <select style="border-color: gray; width: 35%" id="generatetype">
+            <option value="default">default</option>
+            <option value="current">on current sheet</option>
+            <option value="new">on new sheet</option>
+        </select>
+        <button class="button" type="button" style="margin-left: 10px" onclick="handleSheetBuild()">Generate Sheet</button>
+    </div>
+    <hr>
+    <script>
+        var selType, files, folders; 
+
+        //Sets an active widget state based on selection type: Files, Folders, or both
+        function setActive() {
+            selType = document.querySelector("input[name='seltype']:checked").value;
+            switch (selType) {
+                case 'Folders':
+                    document.getElementById("folderitems").disabled = false;
+                    document.getElementById("fileitems").disabled = true;
+                    break;
+                default:
+                    document.getElementById("folderitems").disabled = false;
+                    document.getElementById("fileitems").disabled = false;
+            }
+        }
+
+        //Fetches all the required files and folders
+        function handleFormSubmit() {
+            google.script.run.withSuccessHandler(populate).getAllFoldersAndFiles();
+        }
+
+        //Renders generated sheets
+        function handleSheetBuild() {
+            var generateType = document.getElementById("generatetype").value;
+            var folderQuery = document.getElementById("folderitems").value;
+            var fileQuery = document.getElementById("fileitems").value;
+            google.script.run.generateRequestsSheet(selType, generateType, folderQuery, fileQuery);
+        }
+
+        //Populates both datalist fields (#folders and #files) with respective content
+        function populate(content) {
+            folders = content[0];
+            files = content[1];
+            populateFolders(folders.slice());
+            populateFiles(files.slice());
+            google.script.run.alert(0);
+        }
+
+        //Populate datalist(#folders) with Folders
+        function populateFolders(folderCopy) {
+            var folderOption;
+            clearOptions(0);
+            for (var i = 0; i < folderCopy.length; i++) {
+                folderOption = document.createElement("OPTION");
+                folderOption.value = folderCopy[i];
+                document.getElementsByTagName("datalist")[0].appendChild(folderOption);
+            }
+        }
+
+        //Populate datalist(#files) list with Files
+        function populateFiles(fileCopy) {
+            var fileOption;
+            var fileOptionArray;
+            clearOptions(1);
+            for (var i = 0; i < fileCopy.length; i++) {
+                fileOptionArray = fileCopy[i];
+                for (var a = 0; a < fileOptionArray.length; a++) {
+                    fileOption = document.createElement("OPTION");
+                    fileOption.value = fileOptionArray[a];
+                    document.getElementsByTagName("datalist")[1].appendChild(fileOption);
+                }
+            }
+        }
+
+        //Populate the datalist(#files) with specific files based on selected folder
+        function populateSpecific() {
+            setActive();
+            var name = document.getElementById("folderitems").value;
+            var folderIndex = folders.indexOf(name);
+            var fileArray = files[folderIndex]; //Same number of files and folders
+            var fArray = [];
+            fArray[0] = fileArray;
+            populateFiles(fArray);
+        }
+
+        //Clears Items in a datalists (#Folders and #Files) before they get repopulated
+        function clearOptions(index) {
+            var myNode = document.getElementsByTagName("datalist")[index];
+            while (myNode.firstChild) {
+                myNode.removeChild(myNode.firstChild);
+            }
+        }
+    </script>
+</body>
+
+</html>
